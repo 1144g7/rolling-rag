@@ -1,0 +1,76 @@
+{
+  "type": "object",
+  "properties": {
+    "extractions": {
+      "type": "array",
+      "description": "A/F/C 提取结果",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {"type": "string", "enum": ["A", "F", "C"]},
+          "content": {"type": "string", "description": "15-80字自包含陈述句"},
+          "msg_span": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "来源消息范围 [起始号, 结束号]"
+          }
+        },
+        "required": ["type", "content", "msg_span"]
+      }
+    },
+    "b_flags": {
+      "type": "array",
+      "description": "可能含可复用能力的段落标记",
+      "items": {
+        "type": "object",
+        "properties": {
+          "msg_span": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "description": {"type": "string", "description": "能力方向简述"}
+        },
+        "required": ["msg_span", "description"]
+      }
+    },
+    "d_atoms": {
+      "type": "array",
+      "description": "D 原子：情境→感受→行为",
+      "items": {
+        "type": "object",
+        "properties": {
+          "situation": {"type": "string", "description": "触发情境"},
+          "feeling": {"type": "string", "description": "感受（必须有值）"},
+          "behavior": {"type": "string", "description": "行为反应（必须有值）"},
+          "quote": {"type": "string", "description": "用户原话"},
+          "msg_span": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "required": ["situation", "feeling", "behavior", "quote", "msg_span"]
+      }
+    },
+    "topic_shift": {
+      "type": "boolean",
+      "description": "用户核心关注点是否发生明显转变"
+    },
+    "shift_confidence": {
+      "type": "number",
+      "description": "转折置信度 0.0-1.0",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "summary": {
+      "type": "string",
+      "description": "80-200字实体密集摘要"
+    }
+  },
+  "required": ["extractions", "topic_shift", "shift_confidence", "summary"]
+}

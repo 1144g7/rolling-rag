@@ -1,0 +1,44 @@
+{
+  "type": "object",
+  "properties": {
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "叙事段名 3-15字"},
+          "msg_span": {
+            "type": "array",
+            "items": {"type": ["integer", "null"]},
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "summary": {"type": "string", "description": "150-300字实体密集摘要"},
+          "complete": {"type": "boolean"}
+        },
+        "required": ["name", "msg_span", "summary", "complete"]
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {"type": "integer"},
+          "to": {"type": "integer"},
+          "type": {"type": "string"}
+        },
+        "required": ["from", "to", "type"]
+      }
+    },
+    "global_summary": {
+      "description": "段处理模式填 null，全局回顾模式填覆盖式摘要",
+      "type": ["string", "null"]
+    },
+    "conclusion": {
+      "description": "段处理模式填 null，全局回顾模式填一句话落点",
+      "type": ["string", "null"]
+    }
+  },
+  "required": ["segments", "relations"]
+}
