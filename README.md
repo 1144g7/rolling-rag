@@ -2,6 +2,8 @@
 
 > **From two screenshots to a core logic: how to make AI remember all your conversations.**
 
+> 想直接用？→ [Rolling Memory MCP Server](https://github.com/1144g7/rolling-memory)：一行安装，自动导入对话，开箱即搜。
+
 [中文](#中文)
 
 ---
