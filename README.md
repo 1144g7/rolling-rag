@@ -1,8 +1,8 @@
 # Rolling RAG
 
-> **From two screenshots to a core logic: how to make AI remember all your conversations.**
+> **From two screenshots to a context-continuity pattern for long conversation histories.**
 
-> 想直接用？→ [Rolling Memory MCP Server](https://github.com/1144g7/rolling-memory)：一行安装，自动导入对话，开箱即搜。
+> Want a ready-to-use MCP server? See [Rolling Memory MCP Server](https://github.com/1144g7/rolling-memory): install it, import conversations, and search them through MCP-compatible clients.
 
 [中文](#中文)
 
@@ -24,15 +24,15 @@ That moment I realized: **I don't need the original — a description/summary ca
 
 Raw data (images/conversations/articles) is raw material. Summaries are portable structure. The previous segment's summary flows into the next — that's "rolling".
 
-I immediately migrated this pattern from screenshots to conversations: original text = image, summary = description, summary flowing into the next segment = rolling window. Then I discovered — **it applies to anything that needs context continuity.** Like AI voice input, AI translation...
+I immediately migrated this pattern from screenshots to conversations: original text = image, summary = description, summary flowing into the next segment = rolling window. Then I discovered — **the same pattern may generalize to many workflows that need context continuity.** Examples include AI voice input, translation, long-form notes, and conversation memory.
 
-Three months later, this idea was validated on 4,881 real conversations. I added typed relationships to solve the linking problem between semantic segments, fully utilized KV cache and batch acceleration for ultra-long contexts, and used XML prompts to improve accuracy.
+Three months later, this idea was tested in my own perception-engine dataset: 4,881 conversations / 7,996 semantic segments / 5,119 relations. I added typed relationships to explore how semantic segments connect, used prefix-cache-friendly batching for long contexts, and refined the prompt structure to improve consistency.
 
 ---
 
 ## Core Idea
 
-Existing RAG solutions focus on "how to cut" and "how to find". Rolling RAG already handles cutting well — it focuses on **"how to connect"**:
+Many RAG systems focus on retrieval: how to chunk, embed, and find relevant pieces. Rolling RAG focuses on a narrower problem: **how to preserve continuity and connect semantic segments over time**:
 
 ```
 Unstructured conversation
@@ -56,7 +56,7 @@ Key insight: **People don't remember every word — they remember the key points
 
 ## One Prompt, Two Modes
 
-The core logic lives in a single prompt. You don't need our code — any LLM + any vector database, just follow the prompt.
+The core pattern is prompt-level. The current implementation uses Python + SQLite/FTS/embeddings, but the idea can be ported to other LLM and vector-search stacks.
 
 > Full prompt: [`prompts/conv_unified.md`](prompts/conv_unified.md)
 
@@ -103,7 +103,7 @@ One prompt + one fixed JSON Schema, shared by both modes:
     {
       "name": "Air fryer vs oven analysis",
       "msg_span": [11, 12],
-      "summary": "User distinguishes air fryer from oven. AI explains both use heat transfer, but air fryer is 'aggressive convection' (simulates frying, no preheat), ideal for solo efficiency; oven excels at moist baking (chiffon) and large batches. Conclusion: air fryer wins for non-baker singles.",
+      "summary": "User distinguishes air fryer from oven. AI explains both use heat transfer, but air fryer is 'aggressive convection' (simulates frying, no preheat), ideal for solo efficiency; oven excels at moist baking (chiffon) and large batches. Conclusion: air fryer is a better default choice for non-baker singles.",
       "complete": true
     }
   ],
@@ -135,7 +135,7 @@ Relationship types:
 6. Query: semantic search → return segment summaries → expand original text as needed
 ```
 
-That's it. The core logic is all in the prompt.
+That is the minimal loop. The implementation can be simple; the important part is keeping summaries and relationships as portable context between chunks.
 
 ---
 
@@ -143,22 +143,22 @@ That's it. The core logic is all in the prompt.
 
 | | Graph RAG | Mem0 | **Rolling RAG** |
 |---|:-:|:-:|:-:|
-| Memory unit | Entity | Fact | **Segment** |
-| Structure | Entity graph | Vector + graph | **Relationship network** |
-| Boundary detection | None | None | **Semantic (LLM)** |
-| Relation types | Generic | Generic | **12 typed** |
-| Multi-level abstraction | ❌ | ❌ | **✅ Rolling** |
-| Overlap continuity | ❌ | ❌ | **✅ overlap=2** |
+| Primary unit | Entity | Fact / memory item | **Semantic segment** |
+| Main focus | Entity graph | Personal memory | **Context continuity** |
+| Boundary handling | Usually external | Usually implicit | **LLM semantic boundary** |
+| Relation style | Entity relations | Memory links | **Typed segment relations** |
+| Abstraction style | Graph-level | Memory-level | **Rolling summaries** |
+| Expansion path | Entity / document | Memory item | **Summary → original text** |
 
-The biggest difference: Graph RAG builds **a graph of entities** (who mentioned whom). Rolling RAG builds **a network of ideas** (how did this conclusion come about, and why).
+The biggest difference is the unit of structure. Graph RAG often starts from **entities**. Rolling RAG starts from **semantic segments** and asks: how did this idea evolve, what does it depend on, and where should it expand back to the original text?
 
 ---
 
 ## Status
 
-Core logic validated in a full perception engine (4,881 conversations / 7,996 segments / 5,119 relations).
+Core logic tested in my own perception-engine dataset (4,881 conversations / 7,996 semantic segments / 5,119 relations).
 
-MCP Server version in development — will be released as a standalone product supporting Claude Code, Cursor, and other MCP-compatible clients.
+MCP Server version is being extracted as a standalone package for Claude Code, Cursor, and other MCP-compatible clients.
 
 ## License
 
@@ -168,7 +168,9 @@ MIT
 
 # 中文
 
-> **从两张截图到一个核心逻辑：如何让AI记住你所有的对话**
+> **从两张截图到一个长对话上下文连续性模式**
+
+> 想直接用 MCP Server？见 [Rolling Memory MCP Server](https://github.com/1144g7/rolling-memory)：安装后可自动导入对话，并在 MCP 兼容客户端中检索。
 
 [English](#rolling-rag)
 
@@ -189,16 +191,16 @@ MIT
 
 原始数据（图片/对话/文章）是原料。摘要是可搬运的结构。上一段的摘要流入下一段——这就是"滚动"。
 
-我立刻把这个模式从截图迁移到对话：原文=图片，摘要=描述，摘要流入下一段=滚动窗口。然后我发现——**它适用于任何需要上下文关联的东西**。**比如AI语音输入法，AI翻译...**
+我立刻把这个模式从截图迁移到对话：原文=图片，摘要=描述，摘要流入下一段=滚动窗口。然后我发现——**这个模式有机会迁移到很多需要上下文连续性的任务里**，比如 AI 语音输入、翻译、长文整理和对话记忆。
 
-三个月后，这个想法在 4,881 条真实对话上跑出了结果，并且我加入了关系链试图解决语义段落之间的链接问题。
-充分利用KV cache和批量加速处理超长上下文，并用xml提示词提高了准确度。
+三个月后，这个想法在我自己的感知引擎数据集里跑通：4,881 条对话 / 7,996 个语义段 / 5,119 条关系。
+我加入了类型化关系，尝试解决语义段之间的链接问题；同时把批处理设计成更适合前缀缓存的形态，并继续打磨提示词结构来提高稳定性。
 
 ---
 
 ## 核心思想
 
-现有的RAG方案都在处理"怎么切"和"怎么找"。Rolling RAG因为已经把切好了，现阶段处理的是**"怎么连"**：
+很多 RAG 系统更关注检索链路：怎么切块、怎么向量化、怎么找到相关片段。Rolling RAG 关注的是一个更窄的问题：**怎么在长对话里保持上下文连续，并把语义段连接起来**：
 
 ```
 无序对话
@@ -222,7 +224,7 @@ MIT
 
 ## 一个提示词，两种模式
 
-核心逻辑全在一个提示词里。你不需要我们的代码——用任何LLM + 任何向量数据库，照着提示词做就行。
+核心模式主要在提示词层。当前实现使用 Python + SQLite/FTS/Embedding，但这个思路可以迁移到其他 LLM 和向量检索栈。
 
 > 完整提示词：[`prompts/conv_unified.md`](prompts/conv_unified.md)
 
@@ -269,7 +271,7 @@ MIT
     {
       "name": "空气炸锅 vs 烤箱：单人食的最优解论证",
       "msg_span": [11, 12],
-      "summary": "用户辨析空炸与烤箱的区别。AI指出本质均为热传递，但空炸是'狂风对流'（模拟油炸口感、无需预热），适合一人食效率；而烤箱在湿润烘焙（戚风）、大体量食材上不可替代。结论：对于不专业烘焙的单人场景，空气炸锅完胜烤箱。",
+      "summary": "用户辨析空炸与烤箱的区别。AI指出本质均为热传递，但空炸是'狂风对流'（模拟油炸口感、无需预热），适合一人食效率；而烤箱在湿润烘焙（戚风）、大体量食材上不可替代。结论：对于不专业烘焙的单人场景，空气炸锅更适合作为默认选择。",
       "complete": true
     }
   ],
@@ -300,7 +302,7 @@ MIT
 6. 查询时：语义搜索 → 返回段摘要 → 按需展开原文
 ```
 
-就这么简单。核心逻辑全在提示词里。
+这是最小实现闭环。代码可以很简单，关键是让摘要和关系成为跨 chunk 传递的可搬运上下文。
 
 ---
 
@@ -308,22 +310,22 @@ MIT
 
 | | Graph RAG | Mem0 | **Rolling RAG** |
 |---|:-:|:-:|:-:|
-| 记忆单元 | 实体 | 事实 | **段落** |
-| 结构 | 实体图谱 | 向量+图谱 | **关系网络** |
-| 边界检测 | 无 | 无 | **语义（LLM）** |
-| 关系类型 | 泛化 | 泛化 | **12种类型化** |
-| 多层抽象 | ❌ | ❌ | **✅ 滚动** |
-| 重叠连续性 | ❌ | ❌ | **✅ overlap=2** |
+| 主要单元 | 实体 | 事实 / 记忆项 | **语义段** |
+| 主要关注 | 实体图谱 | 个人记忆 | **上下文连续性** |
+| 边界处理 | 通常依赖外部切分 | 通常隐式处理 | **LLM 语义边界** |
+| 关系风格 | 实体关系 | 记忆链接 | **类型化段间关系** |
+| 抽象方式 | 图谱层 | 记忆项层 | **滚动摘要** |
+| 展开路径 | 实体 / 文档 | 记忆项 | **摘要 → 原文** |
 
-最大的区别：Graph RAG 建的是**实体之间的图**（谁提到了谁），Rolling RAG 建的是**想法之间的网络**（这个结论怎么来的、为什么）。
+最大的区别在结构单元：Graph RAG 往往从**实体**出发，Rolling RAG 从**语义段**出发，更关心一个想法如何演进、依赖什么，以及需要时应该展开到哪段原文。
 
 ---
 
 ## 状态
 
-核心逻辑在一个完整的感知引擎中运行验证（4,881对话 / 7,996段 / 5,119关系）。
+核心逻辑已在我自己的感知引擎数据集中跑通（4,881 对话 / 7,996 个语义段 / 5,119 条关系）。
 
-MCP Server 版本正在开发中，将作为独立产品支持 Claude Code / Cursor 等客户端。
+MCP Server 版本正在抽离成独立包，目标是支持 Claude Code / Cursor 等 MCP 兼容客户端。
 
 ## License
 
